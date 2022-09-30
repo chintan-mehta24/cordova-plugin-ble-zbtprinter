@@ -23,8 +23,14 @@
         <framework src="com.fasterxml.jackson.core:jackson-databind:2.2.3" type="gradleReference" />-->
 
         <config-file target="AndroidManifest.xml" parent="/*">
+            <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+            <uses-permission android:name="android.permission.NFC" />
             <uses-permission android:name="android.permission.BLUETOOTH"/>
-            <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />
+            <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
+            <uses-permission android:name="android.permission.BLUETOOTH_ADMIN"/>
+            <uses-permission android:name="android.permission.BLUETOOTH_SCAN" />
+            <uses-feature android:name="android.hardware.nfc" android:required="true" />
+            <uses-feature android:name="android.hardware.bluetooth_le" android:required="true" /
             <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
         </config-file>
 
