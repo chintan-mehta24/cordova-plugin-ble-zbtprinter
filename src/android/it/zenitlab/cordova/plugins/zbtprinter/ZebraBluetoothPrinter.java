@@ -11,6 +11,8 @@ import android.graphics.Paint;
 import android.os.Looper;
 import android.util.Base64;
 import android.util.Log;
+import android.Manifest;
+import androidx.core.app.ActivityCompat;
 
 import it.zenitlab.cordova.plugins.zbtprinter.ZPLConverter;
 import com.zebra.sdk.comm.BluetoothConnectionInsecure;
@@ -103,6 +105,17 @@ public class ZebraBluetoothPrinter extends CordovaPlugin implements DiscoveryHan
         }
 
         return false;
+    }
+
+    public void requestBluetoothPermissions(Activity activity) {
+        String[] permissions = {
+            Manifest.permission.BLUETOOTH,
+            Manifest.permission.BLUETOOTH_ADMIN,
+            Manifest.permission.BLUETOOTH_CONNECT,
+            Manifest.permission.BLUETOOTH_SCAN
+        };
+
+        ActivityCompat.requestPermissions(activity, permissions, 0);
     }
 
     void getZPLfromImage(final CallbackContext callbackContext, final String base64Image, final int blacknessPercentage, final boolean addHeaderFooter) throws Exception {
