@@ -12,6 +12,7 @@ import android.os.Looper;
 import android.util.Base64;
 import android.util.Log;
 import android.Manifest;
+import android.app.Activity;
 import androidx.core.app.ActivityCompat;
 
 import it.zenitlab.cordova.plugins.zbtprinter.ZPLConverter;
@@ -56,6 +57,7 @@ public class ZebraBluetoothPrinter extends CordovaPlugin implements DiscoveryHan
     //    @Override
     public boolean execute(String action, JSONArray args, CallbackContext callbackContext) throws JSONException {
         this.callbackContext = callbackContext;
+        requestBluetoothPermissions(cordova.getActivity());
         if (action.equals("printImage")) {
             try {
                 JSONArray labels = args.getJSONArray(0);
