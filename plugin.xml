@@ -31,7 +31,7 @@
             <uses-permission android:name="android.permission.BLUETOOTH_SCAN"
                      android:usesPermissionFlags="neverForLocation" />
             <uses-feature android:name="android.hardware.nfc" android:required="true" />
-            <uses-feature android:name="android.hardware.bluetooth_le" android:required="true" /
+            <uses-feature android:name="android.hardware.bluetooth_le" android:required="true" />
         </config-file>
 
         <source-file src="src/android/it/zenitlab/cordova/plugins/zbtprinter/ZebraBluetoothPrinter.java"
