@@ -35,11 +35,11 @@ cordova.plugins.zbtprinter.print(MACAddress, printText,
 
 Discover nearby bluetooth Zebra printers:
 
-```js
+```ts
 cordova.plugins.zbtprinter.discoverPrinters(
-    function(MACAddress) { 
-        alert("discovered a new printer: " + MACAddress); 
-    }, function(fail) { 
+    (MACAddresses: string[]) => { 
+        alert("discovered a new printers: " + MACAddresses.join(',')); 
+    }, (fail) => { 
         alert(fail); 
     }
 );

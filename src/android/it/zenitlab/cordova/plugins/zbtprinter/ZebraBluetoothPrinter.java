@@ -32,10 +32,13 @@ import com.zebra.sdk.printer.discovery.DiscoveryHandler;
 
 import org.apache.cordova.CallbackContext;
 import org.apache.cordova.CordovaPlugin;
+import org.apache.cordova.PluginResult;
 import org.json.JSONArray;
 import org.json.JSONException;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 
 
@@ -43,7 +46,7 @@ public class ZebraBluetoothPrinter extends CordovaPlugin implements DiscoveryHan
 
     private static final String LOG_TAG = "ZebraBluetoothPrinter";
     private CallbackContext callbackContext;
-    private boolean printerFound;
+    private List<String> printerList;
     private Connection thePrinterConn;
     private PrinterStatus printerStatus;
     private ZebraPrinter printer;
@@ -435,7 +438,7 @@ public class ZebraBluetoothPrinter extends CordovaPlugin implements DiscoveryHan
     }
 
     private void discoverPrinters() {
-        printerFound = false;
+        printerList = new ArrayList<String>();
 
         new Thread(new Runnable() {
             public void run() {
@@ -499,18 +502,18 @@ public class ZebraBluetoothPrinter extends CordovaPlugin implements DiscoveryHan
     @Override
     public void foundPrinter(DiscoveredPrinter discoveredPrinter) {
         Log.d(LOG_TAG, "Printer found: " + discoveredPrinter.address);
-        if (!printerFound) {
-            printerFound = true;
-            callbackContext.success(discoveredPrinter.address);
-        }
+        printerList.add(discoveredPrinter.address);
     }
 
 
     @Override
     public void discoveryFinished() {
         Log.d(LOG_TAG, "Finished searching for printers...");
-        if (!printerFound) {
+        if (printerList.isEmpty()) {
             callbackContext.error("No printer found. If this problem persists, restart the printer.");
+        } else {
+          callbackContext.sendPluginResult(new PluginResult(PluginResult.Status.OK, new JSONArray(printerList)));
+          Log.d(LOG_TAG, "Printer founds: " + String.join(",", printerList));
         }
     }
 
