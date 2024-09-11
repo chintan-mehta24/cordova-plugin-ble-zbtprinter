@@ -74,8 +74,8 @@ public class ZebraBluetoothPrinter extends CordovaPlugin implements DiscoveryHan
         } else if (action.equals("print")) {
             try {
                 String MACAddress = args.getString(0);
-                String msg = args.getString(1);
-                sendData(callbackContext, MACAddress, msg);
+                JSONArray msgs = args.getJSONArray(1);
+                sendData(callbackContext, MACAddress, msgs);
             } catch (Exception e) {
                 Log.e(LOG_TAG, e.getMessage());
                 e.printStackTrace();
@@ -184,7 +184,7 @@ public class ZebraBluetoothPrinter extends CordovaPlugin implements DiscoveryHan
                     else if(printerStatus.isHeadOpen){
                         callbackContext.error("Printer head is open");
                     }
-                    
+
                     else{
                         callbackContext.error("Cannot print, unknown error");
                     }
@@ -204,7 +204,7 @@ public class ZebraBluetoothPrinter extends CordovaPlugin implements DiscoveryHan
     /*
      * This will send data to be printed by the bluetooth printer
      */
-    void sendData(final CallbackContext callbackContext, final String mac, final String msg) throws IOException {
+    void sendData(final CallbackContext callbackContext, final String mac, final JSONArray msgs) throws IOException {
         new Thread(new Runnable() {
             @Override
             public void run() {
@@ -222,7 +222,10 @@ public class ZebraBluetoothPrinter extends CordovaPlugin implements DiscoveryHan
                     thePrinterConn.open();
 
                     SGD.SET("device.languages", "zpl", thePrinterConn);
-                    thePrinterConn.write(msg.getBytes());
+                    for (int i = 0; i < msgs.length(); i++) {
+                      thePrinterConn.write(msgs.getString(i).getBytes());
+                      Thread.sleep(100);
+                    }
 
                     // Close the insecure connection to release resources.
                     thePrinterConn.close();

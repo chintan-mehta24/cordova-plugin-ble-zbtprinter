@@ -20,11 +20,11 @@ cordova.plugins.zbtprinter.printImage(base64StringArray, MACAddress,
 You can send data in ZPL Zebra Programing Language:
 
 ```js
-var printText = "^XA"
+var printTexts = ["^XA"
 		+ "^FO20,20^A0N,25,25^FDThis is a ZPL test.^FS"
-		+ "^XZ";
+		+ "^XZ"];
 
-cordova.plugins.zbtprinter.print(MACAddress, printText,
+cordova.plugins.zbtprinter.print(MACAddress, printTexts,
     function(success) { 
         alert("Print ok"); 
     }, function(fail) { 
@@ -87,7 +87,7 @@ cordova.plugins.zbtprinter.getZPLfromImage(base64Image, addHeaderFooter, blackne
 ```
 
 ## Installation
-cordova plugin add https://github.com/prakashsatyani/cordova-plugin-ble-zbtprinter
+cordova plugin add https://github.com/chintan-mehta24/cordova-plugin-ble-zbtprinter.git
 
 ## ZPL - Zebra Programming Language
 For more information about ZPL please see the  [PDF Official Manual](https://support.zebra.com/cpws/docs/zpl/zpl_manual.pdf)
