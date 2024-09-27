@@ -4,8 +4,16 @@ exports.discoverPrinters = function(successCallback, errorCallback) {
     cordova.exec(successCallback, errorCallback, 'ZebraBluetoothPrinter', 'discoverPrinters', []);
 };
 
+exports.getBondedPrinters = function(successCallback, errorCallback) {
+    cordova.exec(successCallback, errorCallback, 'ZebraBluetoothPrinter', 'getBondedPrinters', []);
+};
+
 exports.print = function(MACAddress, str, successCallback, errorCallback) {
     cordova.exec(successCallback, errorCallback, 'ZebraBluetoothPrinter', 'print', [MACAddress, str]);
+};
+
+exports.printZplOverSecureBluetooth = function(MACAddress, strArr, successCallback, errorCallback) {
+    cordova.exec(successCallback, errorCallback, 'ZebraBluetoothPrinter', 'sendZplOverSecureBluetooth', [MACAddress, strArr]);
 };
 
 exports.printImage = function(base64, MACAddress, successCallback, errorCallback) {

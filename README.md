@@ -33,12 +33,40 @@ cordova.plugins.zbtprinter.print(MACAddress, printTexts,
 );
 ```
 
+You can send data in ZPL Zebra Programming Language over Secure Bluetooth Device:
+
+```js
+var printTexts = ["^XA"
+		+ "^FO20,20^A0N,25,25^FDThis is a ZPL test.^FS"
+		+ "^XZ"];
+
+cordova.plugins.zbtprinter.printZplOverSecureBluetooth(MACAddress, printTexts,
+    function(success) { 
+        alert("Print ok"); 
+    }, function(fail) { 
+        alert(fail); 
+    }
+);
+```
+
 Discover nearby bluetooth Zebra printers:
 
 ```ts
 cordova.plugins.zbtprinter.discoverPrinters(
     (MACAddresses: string[]) => { 
-        alert("discovered a new printers: " + MACAddresses.join(',')); 
+        alert("discovered new printers: " + MACAddresses.join(',')); 
+    }, (fail) => { 
+        alert(fail); 
+    }
+);
+```
+
+Get already bonded bluetooth printers:
+
+```ts
+cordova.plugins.zbtprinter.getBondedPrinters(
+    (MACAddresses: {name: string; address: string; type: string;bondState: number; secretAddress: string}}[]) => { 
+        alert("Bonded printers: " + MACAddresses.length); 
     }, (fail) => { 
         alert(fail); 
     }

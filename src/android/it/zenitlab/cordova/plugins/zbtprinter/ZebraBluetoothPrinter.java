@@ -16,6 +16,8 @@ import android.app.Activity;
 import androidx.core.app.ActivityCompat;
 
 import it.zenitlab.cordova.plugins.zbtprinter.ZPLConverter;
+
+import com.zebra.sdk.comm.BluetoothConnection;
 import com.zebra.sdk.comm.BluetoothConnectionInsecure;
 import com.zebra.sdk.comm.Connection;
 import com.zebra.sdk.comm.ConnectionException;
@@ -35,12 +37,12 @@ import org.apache.cordova.CordovaPlugin;
 import org.apache.cordova.PluginResult;
 import org.json.JSONArray;
 import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
-
 
 public class ZebraBluetoothPrinter extends CordovaPlugin implements DiscoveryHandler {
 
@@ -56,8 +58,7 @@ public class ZebraBluetoothPrinter extends CordovaPlugin implements DiscoveryHan
 
     }
 
-
-    //    @Override
+    // @Override
     public boolean execute(String action, JSONArray args, CallbackContext callbackContext) throws JSONException {
         this.callbackContext = callbackContext;
         requestBluetoothPermissions(cordova.getActivity());
@@ -81,8 +82,21 @@ public class ZebraBluetoothPrinter extends CordovaPlugin implements DiscoveryHan
                 e.printStackTrace();
             }
             return true;
+        } else if (action.equals("sendZplOverSecureBluetooth")) {
+            try {
+                String MACAddress = args.getString(0);
+                JSONArray msgs = args.getJSONArray(1);
+                sendZplOverBluetooth(callbackContext, MACAddress, msgs);
+            } catch (Exception e) {
+                Log.e(LOG_TAG, e.getMessage());
+                e.printStackTrace();
+            }
+            return true;
         } else if (action.equals("discoverPrinters")) {
             discoverPrinters();
+            return true;
+        } else if (action.equals("getBondedPrinters")) {
+            getBondedPrinters();
             return true;
         } else if (action.equals("getPrinterName")) {
             String mac = args.getString(0);
@@ -97,7 +111,7 @@ public class ZebraBluetoothPrinter extends CordovaPlugin implements DiscoveryHan
                 e.printStackTrace();
             }
             return true;
-        } else if(action.equals("getZPLfromImage")){
+        } else if (action.equals("getZPLfromImage")) {
             try {
                 String base64String = args.getString(0);
                 boolean addHeaderFooter = args.getBoolean(1);
@@ -114,16 +128,17 @@ public class ZebraBluetoothPrinter extends CordovaPlugin implements DiscoveryHan
 
     public void requestBluetoothPermissions(Activity activity) {
         String[] permissions = {
-            Manifest.permission.BLUETOOTH,
-            Manifest.permission.BLUETOOTH_ADMIN,
-            Manifest.permission.BLUETOOTH_CONNECT,
-            Manifest.permission.BLUETOOTH_SCAN
+                Manifest.permission.BLUETOOTH,
+                Manifest.permission.BLUETOOTH_ADMIN,
+                Manifest.permission.BLUETOOTH_CONNECT,
+                Manifest.permission.BLUETOOTH_SCAN
         };
 
         ActivityCompat.requestPermissions(activity, permissions, 0);
     }
 
-    void getZPLfromImage(final CallbackContext callbackContext, final String base64Image, final int blacknessPercentage, final boolean addHeaderFooter) throws Exception {
+    void getZPLfromImage(final CallbackContext callbackContext, final String base64Image, final int blacknessPercentage,
+            final boolean addHeaderFooter) throws Exception {
 
         String zplCode = "";
 
@@ -135,20 +150,20 @@ public class ZebraBluetoothPrinter extends CordovaPlugin implements DiscoveryHan
 
         byte[] ditheredB64Png = Base64.decode(base64Dithered, Base64.DEFAULT);
         Bitmap ditheredPng = BitmapFactory.decodeByteArray(ditheredB64Png, 0, ditheredB64Png.length);
-        
-        if(ditheredPng.getHeight() > ditheredPng.getWidth())
+
+        if (ditheredPng.getHeight() > ditheredPng.getWidth())
             ditheredPng = Bitmap.createScaledBitmap(ditheredPng, 300, 540, true);
-        
+
         ZPLConverter zplConveter = new ZPLConverter();
         zplConveter.setCompressHex(false);
         zplConveter.setBlacknessLimitPercentage(blacknessPercentage);
 
-        //Bitmap grayBitmap = toGrayScale(decodedByte);
+        // Bitmap grayBitmap = toGrayScale(decodedByte);
 
         try {
             zplCode = zplConveter.convertFromImage(ditheredPng, addHeaderFooter);
             callbackContext.success(zplCode);
-        } catch (Exception e){
+        } catch (Exception e) {
             callbackContext.error(e.getMessage());
         }
 
@@ -169,38 +184,37 @@ public class ZebraBluetoothPrinter extends CordovaPlugin implements DiscoveryHan
                     ZebraPrinter zPrinter = ZebraPrinterFactory.getInstance(thePrinterConn);
                     PrinterStatus printerStatus = zPrinter.getCurrentStatus();
 
-                    if (printerStatus.isReadyToPrint){
+                    if (printerStatus.isReadyToPrint) {
                         callbackContext.success("Printer is ready for use");
                     }
 
-                    else if(printerStatus.isPaused){
+                    else if (printerStatus.isPaused) {
                         callbackContext.error("Printer is currently paused");
                     }
 
-                    else if(printerStatus.isPaperOut){
+                    else if (printerStatus.isPaperOut) {
                         callbackContext.error("Printer is out of paper");
                     }
 
-                    else if(printerStatus.isHeadOpen){
+                    else if (printerStatus.isHeadOpen) {
                         callbackContext.error("Printer head is open");
                     }
 
-                    else{
+                    else {
                         callbackContext.error("Cannot print, unknown error");
                     }
 
                     thePrinterConn.close();
 
                     Looper.myLooper().quit();
-                } catch (Exception e){
+                } catch (Exception e) {
                     callbackContext.error(e.getMessage());
                 }
             }
         }).start();
 
     }
-    
-    
+
     /*
      * This will send data to be printed by the bluetooth printer
      */
@@ -223,8 +237,8 @@ public class ZebraBluetoothPrinter extends CordovaPlugin implements DiscoveryHan
 
                     SGD.SET("device.languages", "zpl", thePrinterConn);
                     for (int i = 0; i < msgs.length(); i++) {
-                      thePrinterConn.write(msgs.getString(i).getBytes());
-                      Thread.sleep(100);
+                        thePrinterConn.write(msgs.getString(i).getBytes());
+                        Thread.sleep(100);
                     }
 
                     // Close the insecure connection to release resources.
@@ -234,7 +248,7 @@ public class ZebraBluetoothPrinter extends CordovaPlugin implements DiscoveryHan
                     callbackContext.success("Done");
 
                     // } else {
-                        // callbackContext.error("Printer is not ready");
+                    // callbackContext.error("Printer is not ready");
                     // }
                 } catch (Exception e) {
                     // Handle communications error here.
@@ -244,7 +258,6 @@ public class ZebraBluetoothPrinter extends CordovaPlugin implements DiscoveryHan
         }).start();
     }
 
-    
     private void sendImage(final JSONArray labels, final String MACAddress) throws IOException {
         new Thread(new Runnable() {
             @Override
@@ -268,7 +281,8 @@ public class ZebraBluetoothPrinter extends CordovaPlugin implements DiscoveryHan
 
                     printLabel(labels);
 
-                    //Sufficient waiting for the label to print before we start a new printer operation.
+                    // Sufficient waiting for the label to print before we start a new printer
+                    // operation.
                     Thread.sleep(15000);
 
                     thePrinterConn.close();
@@ -284,11 +298,13 @@ public class ZebraBluetoothPrinter extends CordovaPlugin implements DiscoveryHan
         } catch (ConnectionException e) {
             Log.e(LOG_TAG, "Connection exception: " + e.getMessage());
 
-            //The connection between the printer & the device has been lost.
+            // The connection between the printer & the device has been lost.
             if (e.getMessage().toLowerCase().contains("broken pipe")) {
-                callbackContext.error("The connection between the device and the printer has been lost. Please try again.");
+                callbackContext
+                        .error("The connection between the device and the printer has been lost. Please try again.");
 
-            //No printer found via Bluetooth, -1 return so that new printers are searched for.
+                // No printer found via Bluetooth, -1 return so that new printers are searched
+                // for.
             } else if (e.getMessage().toLowerCase().contains("socket might closed")) {
                 int SEARCH_NEW_PRINTERS = -1;
                 callbackContext.error(SEARCH_NEW_PRINTERS);
@@ -361,7 +377,8 @@ public class ZebraBluetoothPrinter extends CordovaPlugin implements DiscoveryHan
             Bitmap decodedByte = BitmapFactory.decodeByteArray(decodedString, 0, decodedString.length);
             ZebraImageAndroid zebraimage = new ZebraImageAndroid(decodedByte);
 
-            //Lengte van het label eerst instellen om te kleine of te grote afdruk te voorkomen
+            // Lengte van het label eerst instellen om te kleine of te grote afdruk te
+            // voorkomen
             if (zebraPrinterLinkOs != null && i == labels.length() - 1) {
                 setLabelLength(zebraimage);
             }
@@ -408,7 +425,7 @@ public class ZebraBluetoothPrinter extends CordovaPlugin implements DiscoveryHan
                     throw new Exception("Please complete the labels first.");
                 } else {
                     throw new Exception("Could not get the printer status. Please try again. " +
-                        "If this problem persists, restart the printer.");
+                            "If this problem persists, restart the printer.");
                 }
             }
         } catch (ConnectionException e) {
@@ -416,7 +433,7 @@ public class ZebraBluetoothPrinter extends CordovaPlugin implements DiscoveryHan
                 Thread.sleep(5000);
                 return getPrinterStatus(++retryAttempt);
             } else {
-               throw new Exception("Could not get the printer status. Please try again. " +
+                throw new Exception("Could not get the printer status. Please try again. " +
                         "If this problem persists, restart the printer.");
             }
         }
@@ -424,7 +441,8 @@ public class ZebraBluetoothPrinter extends CordovaPlugin implements DiscoveryHan
     }
 
     /**
-     * Use the Zebra Android SDK to determine the length if the printer supports LINK-OS
+     * Use the Zebra Android SDK to determine the length if the printer supports
+     * LINK-OS
      *
      * @param zebraimage
      * @throws Exception
@@ -451,7 +469,8 @@ public class ZebraBluetoothPrinter extends CordovaPlugin implements DiscoveryHan
                     BluetoothAdapter bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
                     if (bluetoothAdapter.isEnabled()) {
                         Log.d(LOG_TAG, "Searching for printers...");
-                        BluetoothDiscoverer.findPrinters(cordova.getActivity().getApplicationContext(), ZebraBluetoothPrinter.this);
+                        BluetoothDiscoverer.findPrinters(cordova.getActivity().getApplicationContext(),
+                                ZebraBluetoothPrinter.this);
                     } else {
                         Log.d(LOG_TAG, "Bluetooth is disabled...");
                         callbackContext.error("Bluetooth is not on.");
@@ -483,6 +502,91 @@ public class ZebraBluetoothPrinter extends CordovaPlugin implements DiscoveryHan
         }).start();
     }
 
+    // General Helpers
+    private void addProperty(JSONObject obj, String key, Object value) {
+        // Believe exception only occurs when adding duplicate keys, so just ignore it
+        try {
+            if (value == null) {
+                obj.put(key, JSONObject.NULL);
+            } else {
+                obj.put(key, value);
+            }
+        } catch (JSONException e) {
+        }
+    }
+
+    private void sendZplOverBluetooth(final CallbackContext callbackContext, final String macAddress,
+            final JSONArray msgs) {
+
+        new Thread(new Runnable() {
+            public void run() {
+                try {
+                    // Instantiate connection for given Bluetooth&reg; MAC Address.
+                    Connection thePrinterConn = new BluetoothConnection(macAddress);
+
+                    // Initialize
+                    Looper.prepare();
+
+                    // Open the connection - physical connection is established here.
+                    thePrinterConn.open();
+
+                    for (int i = 0; i < msgs.length(); i++) {
+                        thePrinterConn.write(msgs.getString(i).getBytes());
+                        // Make sure the data got to the printer before closing the connection
+                        Thread.sleep(500);
+                    }
+
+                    // Close the connection to release resources.
+                    thePrinterConn.close();
+
+                    Looper.myLooper().quit();
+                    callbackContext.success("Done");
+                } catch (Exception e) {
+                    // Handle communications error here.
+                    e.printStackTrace();
+                    callbackContext.error(e.getMessage());
+                }
+            }
+        }).start();
+    }
+
+    private void getBondedPrinters() {
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                String name = "name";
+                String address = "address";
+                String type = "type";
+                String bondState = "bondState";
+                String secretAddress = "secretAddress";
+
+                BluetoothAdapter bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
+                if (bluetoothAdapter.isEnabled()) {
+                    Set<BluetoothDevice> pairedDevices = bluetoothAdapter.getBondedDevices();
+                    if (pairedDevices.size() > 0) {
+                        JSONArray returnDevices = new JSONArray();
+                        for (BluetoothDevice device : pairedDevices) {
+                            JSONObject returnObj = new JSONObject();
+                            addProperty(returnObj, name, device.getName());
+                            addProperty(returnObj, address, device.getAddress());
+                            addProperty(returnObj, type, device.getType());
+                            addProperty(returnObj, bondState, device.getBondState());
+                            addProperty(returnObj, secretAddress, device.toString());
+                            returnDevices.put(returnObj);
+                        }
+                        Log.d(LOG_TAG, "Successfully found connected printers " + pairedDevices.size());
+                        callbackContext.success(returnDevices);
+                    } else {
+                        callbackContext.error("No printer found.");
+                    }
+                } else {
+                    Log.d(LOG_TAG, "Bluetooth is disabled...");
+                    callbackContext.error("Bluetooth is not on.");
+                }
+            }
+        }).start();
+    }
+
     private String searchPrinterNameForMacAddress(String macAddress) {
         Log.d(LOG_TAG, "Connecting with printer " + macAddress + " over bluetooth...");
 
@@ -508,15 +612,14 @@ public class ZebraBluetoothPrinter extends CordovaPlugin implements DiscoveryHan
         printerList.add(discoveredPrinter.address);
     }
 
-
     @Override
     public void discoveryFinished() {
         Log.d(LOG_TAG, "Finished searching for printers...");
         if (printerList.isEmpty()) {
             callbackContext.error("No printer found. If this problem persists, restart the printer.");
         } else {
-          callbackContext.sendPluginResult(new PluginResult(PluginResult.Status.OK, new JSONArray(printerList)));
-          Log.d(LOG_TAG, "Printer founds: " + String.join(",", printerList));
+            callbackContext.sendPluginResult(new PluginResult(PluginResult.Status.OK, new JSONArray(printerList)));
+            Log.d(LOG_TAG, "Printer founds: " + String.join(",", printerList));
         }
     }
 
@@ -527,4 +630,3 @@ public class ZebraBluetoothPrinter extends CordovaPlugin implements DiscoveryHan
     }
 
 }
-
